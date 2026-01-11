@@ -447,7 +447,7 @@
 
 .player-hand-wrapper {
   /* overflow: hidden; */
-  height: calc(3.5in + 16px);
+  /* height: calc(3.5in + 16px); */
 }
 
 .player-hand {
