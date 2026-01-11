@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="./templates/room/room.css" />
+
+<section class="room" data-max-players="{{maxPlayers}}">
+  <header class="room-header">
+    <h2 class="room-title">{{name}}</h2>
+    <div class="room-info small muted">Players: {{playerCount}} / {{maxPlayers}}</div>
+    <div class="room-ready small muted">
+      Ready: <span class="ready-count">0</span> / <span class="ready-total">{{playerCount}}</span>
+    </div>
+    <div class="room-actions">
+      <button id="leaveRoomBtn" class="btn btn-ghost">Leave Room</button>
+    </div>
+  </header>
+
+  <div class="room-grid">
+    <aside class="player-column panel">
+      <h3>Players</h3>
+      <ul class="player-list">
+        {{#each players}}
+        <li class="player" data-player-id="{{id}}">
+          <div class="player-info">
+            <div class="player-head">
+              <span class="player-indicator" aria-hidden="true" title="Not ready"></span>
+              <div class="player-name">{{username}} <span class="player-score small muted">{{score}}</span></div>
+            </div>
+            <div class="player-selected small muted">Selected: <span class="selected-slot">—</span></div>
+          </div>
+          <div class="player-actions">
+            <button class="btn btn-ghost btn-ready" data-player-id="{{id}}" type="button">Ready</button>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+    </aside>
+
+    <main class="table-column">
+      <div class="decks">
+        <div class="black-deck card-placeholder black">
+          <div class="card-face"><div class="card-text">Black Deck</div></div>
+        </div>
+      </div>
+
+      <section class="selections panel" aria-label="Player selections">
+        <!-- selection placeholders injected by script -->
+      </section>
+    </main>
+
+    <aside class="hand-column panel">
+      <h3>Your Hand</h3>
+      <div class="player-hand" aria-label="Your cards">
+        <!-- hand placeholders injected by script -->
+      </div>
+    </aside>
+  </div>
+
+  <!-- Start Game confirmation dialog (creator only) -->
+  <dialog id="start-confirm" class="confirm-dialog" aria-labelledby="start-confirm-title">
+    <form method="dialog" class="dialog-content" onsubmit="return false;">
+      <h3 id="start-confirm-title">Start Game</h3>
+      <p class="muted">Are you sure you want to start the game? This will deal cards and begin the first round.</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-outline" data-action="cancel-start">Cancel</button>
+        <button id="confirmStartBtn" type="button" class="btn btn-primary">Start</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Judge selection dialog (appears for the judge when all submissions in) -->
+  <dialog id="judge-picks" class="confirm-dialog" aria-labelledby="judge-picks-title">
+    <form method="dialog" class="dialog-content" onsubmit="return false;">
+      <h3 id="judge-picks-title">Pick the Winning Card</h3>
+      <p class="muted">Review the anonymized submissions below and pick the winner.</p>
+      <div class="judge-choices" role="list"></div>
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-outline" data-action="cancel-judge">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+</section>
+
+<script type="module" src="./templates/room/room.mjs"></script>

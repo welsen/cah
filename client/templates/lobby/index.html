@@ -1,0 +1,69 @@
+<link rel="stylesheet" href="./templates/lobby/lobby.css" />
+
+<section class="lobby">
+  <header class="lobby-header">
+    <div class="logo">Cards Against Humanity</div>
+    <div class="actions">
+      <button class="btn btn-outline" id="createRoomBtn" data-target="createDialog" data-action="show-modal">
+        Create Room
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <ul class="rooms-grid">
+      {{#each rooms}}
+      <li class="room-card">
+        <div class="room-top">
+          <h2 class="room-name">{{name}}</h2>
+          <div class="room-meta">{{playerCount}} players</div>
+        </div>
+        <div class="room-actions">
+          <button class="btn btn-join" data-target="joinDialog" data-action="show-modal" data-room-id="{{id}}">
+            JOIN
+          </button>
+        </div>
+      </li>
+      {{/each}}
+    </ul>
+
+    {{#unless rooms.length}}
+    <p class="empty">No rooms found — create one to get started.</p>
+    {{/unless}}
+  </main>
+
+  <dialog id="joinDialog" class="join-dialog">
+    <button class="dialog-close" data-target="joinDialog" data-action="close">✕</button>
+    <form method="dialog" data-action="submit-join">
+      <h3>Join Room</h3>
+      <input type="hidden" name="roomId" id="roomIdInput" value="" />
+      <label for="usernameInput">Username</label>
+      <input type="text" id="usernameInput" name="username" required />
+      <label for="roomPasswordInput">Password (if required)</label>
+      <input type="password" id="roomPasswordInput" name="password" autocomplete="room-pass" />
+      <menu class="dialog-actions">
+        <button type="reset" class="btn btn-outline dialog-cancel">Cancel</button>
+        <button type="submit" class="btn btn-join">Join</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="createDialog" class="create-dialog">
+    <button class="dialog-close" data-target="createDialog" data-action="close">✕</button>
+    <form method="dialog" data-action="submit-create">
+      <h3>Create Room</h3>
+      <label for="usernameCreatorInput">Username</label>
+      <input type="text" id="usernameCreatorInput" name="username" required />
+      <label for="roomNameInput">Room name</label>
+      <input type="text" id="roomNameInput" name="roomName" required />
+      <label for="maxPlayersInput">Max players</label>
+      <input type="number" id="maxPlayersInput" name="maxPlayers" required min="1" max="20" value="10" />
+      <label for="passwordInput">Password (optional)</label>
+      <input type="password" id="passwordInput" name="password" autocomplete="room-pass" />
+      <menu class="dialog-actions">
+        <button type="reset" class="btn btn-outline dialog-cancel">Cancel</button>
+        <button type="submit" class="btn btn-join">Create</button>
+      </menu>
+    </form>
+  </dialog>
+</section>
