@@ -22,7 +22,7 @@ class Game extends EventEmitter {
     this.handSize = 10;
 
     // score required to win the game
-    this.winningScore = 2; // reduced for faster games
+    this.winningScore = process.env.DEBUG === 'true' ? 2 : 10; // reduced for faster games
 
     // submissions map: submissionId -> { id, playerId, card }
     this.submissions = new Map();
