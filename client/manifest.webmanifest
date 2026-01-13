@@ -1,0 +1,48 @@
+{
+  "name": "Cards Against Humanity",
+  "short_name": "CAH",
+  "description": "Cards Against Humanity is a party game for horrible people.",
+  "lang": "en-US",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f0f0f",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/preview.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create room",
+      "short_name": "Create",
+      "description": "Create a new game room",
+      "url": "/?action=create",
+      "icons": [ { "src": "/favicon.png", "sizes": "96x96" } ]
+    },
+    {
+      "name": "Join room",
+      "short_name": "Join",
+      "description": "Join an existing game",
+      "url": "/?action=join",
+      "icons": [ { "src": "/favicon.png", "sizes": "96x96" } ]
+    }
+  ]
+}
