@@ -8,7 +8,7 @@ class Room extends EventEmitter {
   #password;
   #game;
 
-  constructor(name, maxPlayers = 10, password) {
+  constructor(name, maxPlayers = 10, maxScore = 10, selectedCardPacks = [], password) {
     super();
     this.id = generateHashedRoomId();
     this.name = name;
@@ -16,7 +16,7 @@ class Room extends EventEmitter {
     this.players = new Map();
     this.spectators = new Map();
     this.#password = password;
-    this.#game = new Game(this);
+    this.#game = new Game(this, maxScore, selectedCardPacks);
     // creator metadata
     this.creatorId = null;
     this.creatorName = null;

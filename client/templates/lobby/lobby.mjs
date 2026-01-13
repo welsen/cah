@@ -1,22 +1,22 @@
 // Lobby UI module: initializes join/create dialog behaviors and room join buttons
 
-function initLobby() {
+export function initLobby(app) {
   const root = document.querySelector('.lobby');
   if (!root) return;
 
-  const joinDialog = document.getElementById('joinDialog');
-  const createDialog = document.getElementById('createDialog');
-  const roomIdInput = document.getElementById('roomIdInput');
+  const joinDialog = root.querySelector('#joinDialog');
+  const createDialog = root.querySelector('#createDialog');
+  const roomIdInput = root.querySelector('#roomIdInput');
 
   // Clean previous listeners (idempotent) - use data-action hooks
-  document.querySelectorAll('[data-action="show-modal"]').forEach((b) => {
-    b.removeEventListener('click', onShowModalClick);
+  root.querySelectorAll('[data-action="show-modal"]').forEach((button) => {
+    button.removeEventListener('click', onShowModalClick);
   });
-  document.querySelectorAll('[data-action="close"]').forEach((b) => {
-    b.removeEventListener('click', onDialogClose);
+  root.querySelectorAll('[data-action="close"]').forEach((button) => {
+    button.removeEventListener('click', onDialogClose);
   });
-  document.querySelectorAll('.dialog-cancel').forEach((b) => {
-    b.removeEventListener('click', onDialogCancel);
+  root.querySelectorAll('.dialog-cancel').forEach((button) => {
+    button.removeEventListener('click', onDialogCancel);
   });
 
   function onShowModalClick(e) {
@@ -27,29 +27,27 @@ function initLobby() {
     if (targetId && roomIdInput && el.dataset.roomId) {
       roomIdInput.value = el.dataset.roomId;
     }
-    const dlg = document.getElementById(targetId);
-    if (dlg && typeof dlg.showModal === 'function') {
-      dlg.showModal();
+    const dialog = root.querySelector(`#${targetId}`);
+    if (dialog && typeof dialog.showModal === 'function') {
+      dialog.showModal();
       // focus the first input inside the dialog if present
-      setTimeout(() => dlg.querySelector('input')?.focus(), 20);
+      setTimeout(() => dialog.querySelector('input')?.focus(), 20);
     }
+  }
+
+  function onDialogCancel(e) {
+    const dialog = e.currentTarget.closest('dialog');
+    if (dialog) dialog.close();
   }
 
   function onDialogClose(e) {
     const el = e.currentTarget;
     const targetId = el.dataset.target;
     if (targetId) {
-      const dlg = document.getElementById(targetId);
-      if (dlg) return dlg.close();
+      const dialog = root.querySelector(`#${targetId}`);
+      if (dialog) return dialog.close();
     }
-    const dlg = el.closest('dialog');
-    if (dlg) dlg.close();
-  }
-
-  function onDialogCancel(e) {
-    // find parent dialog and close it
-    const dlg = e.currentTarget.closest('dialog');
-    if (dlg) dlg.close();
+    onDialogCancel(e);
   }
 
   // form submit handlers
@@ -60,10 +58,9 @@ function initLobby() {
       submit.disabled = true;
       submit.classList.add('disabled');
     }
-    if (document.app && typeof document.app.submitJoinRoomForm === 'function') {
-      document.app.submitJoinRoomForm(e);
-      const dlg = document.getElementById('joinDialog');
-      if (dlg) dlg.close();
+    if (app && typeof app.submitJoinRoomForm === 'function') {
+      app.submitJoinRoomForm(e);
+      if (joinDialog) joinDialog.close();
     }
   }
 
@@ -74,58 +71,40 @@ function initLobby() {
       submit.disabled = true;
       submit.classList.add('disabled');
     }
-    if (document.app && typeof document.app.createRoom === 'function') {
-      document.app.createRoom(e);
-      const dlg = document.getElementById('createDialog');
-      if (dlg) dlg.close();
+    if (app && typeof app.createRoom === 'function') {
+      app.createRoom(e);
+      if (createDialog) createDialog.close();
     }
   }
 
   // Attach listeners using data-action hooks
-  document.querySelectorAll('[data-action="show-modal"]').forEach((b) => {
-    b.addEventListener('click', onShowModalClick);
+  root.querySelectorAll('[data-action="show-modal"]').forEach((button) => {
+    button.addEventListener('click', onShowModalClick);
   });
-  document.querySelectorAll('[data-action="close"]').forEach((b) => {
-    b.addEventListener('click', onDialogClose);
+  root.querySelectorAll('[data-action="close"]').forEach((button) => {
+    button.addEventListener('click', onDialogClose);
   });
-  document.querySelectorAll('.dialog-cancel').forEach((b) => {
-    b.addEventListener('click', onDialogCancel);
+  root.querySelectorAll('.dialog-cancel').forEach((button) => {
+    button.addEventListener('click', onDialogCancel);
   });
 
   // form submit handlers (unobtrusive)
-  const joinForm = document.querySelector('form[data-action="submit-join"]');
+  const joinForm = root.querySelector('form[data-action="submit-join"]');
   if (joinForm) {
     joinForm.removeEventListener('submit', onSubmitJoin);
     joinForm.addEventListener('submit', onSubmitJoin);
   }
-  const createForm = document.querySelector('form[data-action="submit-create"]');
+  const createForm = root.querySelector('form[data-action="submit-create"]');
   if (createForm) {
     createForm.removeEventListener('submit', onSubmitCreate);
     createForm.addEventListener('submit', onSubmitCreate);
   }
 
-  document.querySelectorAll('[data-action="close"]').forEach((b) => {
-    b.addEventListener('click', onDialogClose);
+  root.querySelectorAll('[data-action="close"]').forEach((button) => {
+    button.addEventListener('click', onDialogClose);
   });
 
-  document.querySelectorAll('.dialog-cancel').forEach((b) => {
-    b.addEventListener('click', onDialogCancel);
+  root.querySelectorAll('.dialog-cancel').forEach((button) => {
+    button.addEventListener('click', onDialogCancel);
   });
-
-  // legacy create button handling still works via data-action
 }
-
-// auto-run in case the template is already present
-(function boot() {
-  if (document.querySelector('.lobby')) initLobby();
-  else
-    window.addEventListener(
-      'DOMContentLoaded',
-      () => {
-        if (document.querySelector('.lobby')) initLobby();
-      },
-      { once: true }
-    );
-})();
-
-export { initLobby };

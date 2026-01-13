@@ -2,15 +2,17 @@
 // This file contains the JS that was previously in the template inline <script>.
 // It initializes the room UI, wires Ready button behavior, and listens for socket events.
 
+import { showToast } from '../../utils/showToast.mjs';
+
 function escapeHtml(str) {
   return String(str || '').replace(/[&<>"]+/g, (s) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[s]));
 }
 
-function initRoom() {
+export function initRoom(app) {
   const root = document.querySelector('.room');
   if (!root) return;
 
-  const maxPlayers = parseInt(root.dataset.maxPlayers, 10) || 4;
+  const maxPlayers = parseInt(root.dataset.maxPlayers, 10) || 2;
   const selections = document.querySelector('.selections');
   const hand = document.querySelector('.player-hand');
 
@@ -33,7 +35,6 @@ function initRoom() {
     selectedCards.clear();
     document.querySelectorAll('.hand-card.selected').forEach((el) => el.classList.remove('selected'));
     // remove selection counter if present
-    const root = document.querySelector('.room');
     if (root) {
       const handCol = root.querySelector('.hand-column');
       if (handCol) {
@@ -45,73 +46,21 @@ function initRoom() {
 
   // update or remove the selection counter shown above the hand
   function updateSelectionCounter(requiredPick) {
-    const root = document.querySelector('.room');
     if (!root) return;
     const handCol = root.querySelector('.hand-column');
     if (!handCol) return;
     let counter = handCol.querySelector('.selection-counter');
-    if (!counter) {
-      counter = document.createElement('div');
-      counter.className = 'selection-counter small muted';
-      handCol.insertBefore(counter, handCol.querySelector('.player-hand'));
-    }
+    try {
+      if (!counter) {
+        counter = document.createElement('div');
+        counter.className = 'selection-counter small muted';
+        handCol.insertBefore(counter, handCol.querySelector('.player-hand'));
+      }
+    } catch (_e) {}
     const pick =
       typeof requiredPick === 'number' ? requiredPick : parseInt(root.dataset.currentBlackPick || '1', 10) || 1;
     counter.textContent = `Selected ${selectedCards.size} / ${pick}`;
     if (selectedCards.size === 0 && counter) counter.remove();
-  }
-
-  // small UI toast helper with deduplication and concurrency limits
-  const __recentToasts = new Map(); // message -> timestamp
-  function showToast(message, opts = {}) {
-    const { type = 'error', actionLabel, action } = opts;
-    const now = Date.now();
-    // dedupe: don't show identical messages within 4 seconds
-    const last = __recentToasts.get(message);
-    if (last && now - last < 4000) {
-      console.debug('[toast] suppressed duplicate message:', message);
-      return;
-    }
-    __recentToasts.set(message, now);
-    setTimeout(() => {
-      __recentToasts.delete(message);
-    }, 4500);
-
-    let container = document.querySelector('.toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.className = 'toast-container';
-      document.body.appendChild(container);
-    }
-
-    // limit concurrent toasts to 3; remove oldest if needed
-    const existing = Array.from(container.querySelectorAll('.toast'));
-    if (existing.length >= 3) {
-      existing[0].remove();
-    }
-
-    const t = document.createElement('div');
-    t.className = 'toast toast--' + type;
-    t.textContent = message;
-    if (actionLabel && typeof action === 'function') {
-      const a = document.createElement('button');
-      a.className = 'toast-action';
-      a.textContent = actionLabel;
-      a.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        action();
-        t.remove();
-      });
-      t.appendChild(a);
-    }
-    container.appendChild(t);
-    setTimeout(() => {
-      t.classList.add('visible');
-    }, 20);
-    setTimeout(() => {
-      t.classList.remove('visible');
-      setTimeout(() => t.remove(), 300);
-    }, 5000);
   }
 
   // Toggle Ready state optimistically, disable button and wait for server ack
@@ -133,12 +82,12 @@ function initRoom() {
     // send to server with acknowledgement and show pending state
     const playerId = btn.dataset.playerId;
     const roomId = window.location.pathname.split('/')[1];
-    if (document.app && document.app.socket && playerId) {
+    if (app && app.socket && playerId) {
       btn.disabled = true;
       btn.classList.add('pending');
 
       const payload = { roomId, playerId, ready: willBeReady };
-      const socket = document.app.socket;
+      const socket = app.socket;
 
       let handled = false;
       socket.timeout(5000).emit('playerReady', payload, (err, resp) => {
@@ -219,23 +168,23 @@ function initRoom() {
 
     // re-evaluate hand card playability depending on whether local player is judge
     const handCards = document.querySelectorAll('.hand-card');
-    handCards.forEach((c) => {
+    handCards.forEach((card) => {
       if (!myId || myId === judgeId) {
-        c.classList.remove('playable');
-        c.classList.remove('selectable');
-        c.onclick = null;
-      } else if (!c.classList.contains('submitted')) {
+        card.classList.remove('playable');
+        card.classList.remove('selectable');
+        card.onclick = null;
+      } else if (!card.classList.contains('submitted')) {
         const pick =
           parseInt(root && root.dataset && root.dataset.currentBlackPick ? root.dataset.currentBlackPick : '1', 10) ||
           1;
         if (pick <= 1) {
-          c.classList.add('playable');
-          c.classList.remove('selectable');
-          c.onclick = () => playCardHandler(c);
+          card.classList.add('playable');
+          card.classList.remove('selectable');
+          card.onclick = () => playCardHandler(card);
         } else {
-          c.classList.add('selectable');
-          c.classList.remove('playable');
-          c.onclick = () => toggleSelectCard(c);
+          card.classList.add('selectable');
+          card.classList.remove('playable');
+          card.onclick = () => toggleSelectCard(card);
         }
       }
     });
@@ -271,7 +220,7 @@ function initRoom() {
     });
 
     console.debug('[client] emitting playCard', { roomId, playerId: myId, cardIds });
-    document.app.socket.timeout(5000).emit('playCard', { roomId, playerId: myId, cardId: cardIds }, (err, resp) => {
+    app.socket.timeout(5000).emit('playCard', { roomId, playerId: myId, cardId: cardIds }, (err, resp) => {
       console.debug('[client] playCard ack callback', { err, resp });
       if (err) {
         const code = err && (err.error || err.message) ? err.error || err.message : String(err);
@@ -288,7 +237,7 @@ function initRoom() {
             showToast('You already submitted a card for this round', { type: 'warning' });
             // sync hand from server to ensure UI reflects actual hand/submitted state
             if (myId && roomId) {
-              document.app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (rErr, rResp) => {
+              app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (rErr, rResp) => {
                 if (rErr) console.warn('requestHand failed', rErr);
                 else console.debug('requestHand resynced hand after duplicate submit');
               });
@@ -306,7 +255,7 @@ function initRoom() {
             showToast('One of those cards is not in your hand', { type: 'error' });
             // request a fresh hand to be safe
             if (myId && roomId) {
-              document.app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (rErr, rResp) => {
+              app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (rErr, rResp) => {
                 if (rErr) console.warn('requestHand failed', rErr);
               });
             }
@@ -360,9 +309,9 @@ function initRoom() {
     const myId = sessionStorage.getItem('playerId');
     const roomId = window.location.pathname.split('/')[1];
     try {
-      if (myId && roomId && document.app && document.app.socket) {
+      if (myId && roomId && app && app.socket) {
         // fire-and-forget: we don't block on ack, but we attempt to inform server
-        document.app.socket.timeout(5000).emit('leaveRoom', { roomId, playerId: myId }, (err, resp) => {
+        app.socket.timeout(5000).emit('leaveRoom', { roomId, playerId: myId }, (err, resp) => {
           if (err) console.warn('leaveRoom failed (ack)', err);
           // clear local session state immediately to avoid accidental reconnects
           try {
@@ -382,7 +331,6 @@ function initRoom() {
   // toggle card selection for multi-pick black cards
   function toggleSelectCard(cardEl) {
     if (!cardEl || cardEl.classList.contains('submitted')) return;
-    const root = document.querySelector('.room');
     if (!root) return;
     const pick = parseInt(root.dataset.currentBlackPick || '1', 10) || 1;
     console.debug('[client] toggleSelectCard start', {
@@ -397,11 +345,11 @@ function initRoom() {
       playCardHandler(cardEl);
       return;
     }
-    const cid = cardEl.dataset.cardId;
-    if (!cid) return;
+    const cardId = cardEl.dataset.cardId;
+    if (!cardId) return;
     if (cardEl.classList.contains('selected')) {
       cardEl.classList.remove('selected');
-      selectedCards.delete(cid);
+      selectedCards.delete(cardId);
     } else {
       if (selectedCards.size >= pick) {
         // prevent selecting more than allowed
@@ -409,7 +357,7 @@ function initRoom() {
         return;
       }
       cardEl.classList.add('selected');
-      selectedCards.add(cid);
+      selectedCards.add(cardId);
     }
 
     // update counter UI
@@ -430,8 +378,8 @@ function initRoom() {
   }
 
   // Socket event setup (safe: remove prior handlers first)
-  if (document.app && document.app.socket) {
-    const socket = document.app.socket;
+  if (app && app.socket) {
+    const socket = app.socket;
     console.info('[room] socket present, id=', socket && socket.id);
 
     // remove any previous listeners from earlier inits
@@ -490,7 +438,14 @@ function initRoom() {
         try {
           const indicator = li.querySelector('.player-indicator');
           if (indicator) {
-            const initials = (username || 'P').toString().trim().split(/\s+/).map((s) => s[0]).slice(0, 2).join('').toUpperCase();
+            const initials = (username || 'P')
+              .toString()
+              .trim()
+              .split(/\s+/)
+              .map((s) => s[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase();
             indicator.textContent = initials;
             indicator.classList.add('has-initials');
           }
@@ -558,7 +513,11 @@ function initRoom() {
           li.dataset.playerId = player.id;
           li.innerHTML = `<div class="player-info"><div class="player-head"><span class="player-indicator" aria-hidden="true" title="Not ready"></span><div class="player-name">${escapeHtml(
             player.username || 'Player'
-          )} <span class="player-score small muted">${player.score || 0}</span></div></div><div class="player-role small muted"></div><div class="player-selected small muted">Selected: <span class="selected-slot">—</span></div></div><div class="player-actions"><button class="btn btn-ghost btn-ready" data-player-id="${player.id}" type="button">Ready</button></div>`;
+          )} <span class="player-score small muted">${
+            player.score || 0
+          }</span></div></div><div class="player-role small muted"></div><div class="player-selected small muted">Selected: <span class="selected-slot">—</span></div></div><div class="player-actions"><button class="btn btn-ghost btn-ready" data-player-id="${
+            player.id
+          }" type="button">Ready</button></div>`;
 
           // mark judge on the actual player's row
           if (String(player.id) === String(judgeId)) {
@@ -571,7 +530,14 @@ function initRoom() {
           try {
             const indicator = li.querySelector('.player-indicator');
             if (indicator) {
-              const initials = (player.username || 'P').toString().trim().split(/\s+/).map((s) => s[0]).slice(0, 2).join('').toUpperCase();
+              const initials = (player.username || 'P')
+                .toString()
+                .trim()
+                .split(/\s+/)
+                .map((s) => s[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
               indicator.textContent = initials;
               indicator.classList.add('has-initials');
               if (player.isReady) indicator.classList.add('ready');
@@ -599,27 +565,6 @@ function initRoom() {
         const rt = root.querySelector('.ready-total');
         if (rc) rc.textContent = String(readyCount);
         if (rt) rt.textContent = String(total);
-
-        // if current session is the creator and everyone is ready, show the start button
-        const myId = sessionStorage.getItem('playerId');
-        if (creatorId && myId && creatorId === myId && readyCount === total && total > 0) {
-          const header = root.querySelector('.room-header');
-          if (header && !document.getElementById('startGameBtn')) {
-            const btn = document.createElement('button');
-            btn.id = 'startGameBtn';
-            btn.className = 'btn btn-primary';
-            btn.textContent = 'Start Game';
-            btn.addEventListener('click', startGameHandler);
-            header.appendChild(btn);
-          }
-          // indicate creator can start
-          root.classList.add('creator-can-start');
-        } else {
-          // remove start button if present and clear creator-can-start state
-          const startBtn = document.getElementById('startGameBtn');
-          if (startBtn) startBtn.remove();
-          root.classList.remove('creator-can-start');
-        }
 
         // If not all players are ready, remove any selection placeholders or waiting hints
         if (readyCount !== total) {
@@ -686,7 +631,7 @@ function initRoom() {
       const myId = sessionStorage.getItem('playerId');
       const roomId = window.location.pathname.split('/')[1];
       if (myId && roomId) {
-        document.app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (err, resp) => {
+        app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (err, resp) => {
           if (err) {
             console.warn('requestHand failed:', err);
           } else {
@@ -703,9 +648,9 @@ function initRoom() {
       const black = root.querySelector('.black-deck');
       if (black) {
         const pick = card && (card.pick || card.pick === 0) ? card.pick : 1;
-        black.innerHTML = `<div class="card-face"><div class="card-text">${
-          card && card.text ? escapeHtml(card.text) : 'Black Card'
-        }</div><div class="card-meta small muted">Pick: ${pick}</div></div>`;
+        black.innerHTML = `<div class="card-face"><span class="card-text">${
+          card && card.text ? escapeHtml(card.text) : 'Cards Against Humanity'
+        }</span><div class="card-meta small muted">Pick: ${pick}</div></div>`;
         // store the current black text for later UI (round results) and pick
         root.dataset.currentBlackText = card && card.text ? card.text : '';
         root.dataset.currentBlackPick = String(pick);
@@ -758,7 +703,7 @@ function initRoom() {
           // schedule a requestHand retry
           setTimeout(() => {
             if (myId && roomId) {
-              document.app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (err, resp) => {
+              app.socket.timeout(5000).emit('requestHand', { roomId, playerId: myId }, (err, resp) => {
                 if (err) console.warn('requestHand retry failed', err);
                 else console.debug('requestHand retry ok');
               });
@@ -833,22 +778,8 @@ function initRoom() {
       }
 
       const totalRequired = required || Math.max(0, (root.dataset.maxPlayers || 4) - 1);
-      const remaining = Math.max(0, totalRequired - (count || 0));
 
-      // render selection placeholders for multi-pick black cards
-      // clear any existing placeholders
       selections.innerHTML = '';
-      // const slots = document.createElement('div');
-      // slots.className = 'selection-slots';
-      // for (let i = 0; i < totalRequired; i++) {
-      //   const slot = document.createElement('div');
-      //   slot.className = 'selection-slot';
-      //   slot.setAttribute('role', 'status');
-      //   slot.setAttribute('aria-label', i < (count || 0) ? 'Submitted' : 'Awaiting submission');
-      //   if (i < (count || 0)) slot.classList.add('submitted');
-      //   slots.appendChild(slot);
-      // }
-      // selections.appendChild(slots);
 
       // also show a small info message
       let info = root.querySelector('.submission-info');
@@ -930,7 +861,7 @@ function initRoom() {
           const old = btn.innerHTML;
           btn.innerHTML = '<div class="card-face"><div class="card-text">Picking…</div></div>';
           const myId = sessionStorage.getItem('playerId');
-          document.app.socket
+          app.socket
             .timeout(5000)
             .emit(
               'judgePick',
@@ -1016,6 +947,10 @@ function initRoom() {
         hasSubmitted = false;
         // clear selection UI
         clearSelectionUI();
+
+        // ensure Start Game button is removed after a game ends and clear creator-start state
+        const startBtn = document.getElementById('startGameBtn');
+        if (startBtn) startBtn.remove();
 
         // immediately remove any submitted cards from local DOM so players see the table cleared
         try {
@@ -1177,7 +1112,9 @@ function initRoom() {
       try {
         showToast('Room has been disbanded: ' + (reason || 'creator left'), { type: 'warning' });
         // clear local session and redirect to lobby
-        try { sessionStorage.removeItem('playerId'); } catch (e) {}
+        try {
+          sessionStorage.removeItem('playerId');
+        } catch (e) {}
         setTimeout(() => (window.location.href = '/'), 600);
       } catch (e) {
         console.error('Error handling roomDisbanded', e);
@@ -1237,7 +1174,7 @@ function initRoom() {
         btn.disabled = true;
         btn.classList.add('pending');
       }
-      document.app.socket.timeout(5000).emit('startGame', { roomId, playerId: myId }, (err, resp) => {
+      app.socket.timeout(5000).emit('startGame', { roomId, playerId: myId }, (err, resp) => {
         if (btn) {
           btn.classList.remove('pending');
         }
@@ -1316,5 +1253,3 @@ function initRoom() {
 
   enableLocalReadyButton();
 }
-
-export { initRoom };

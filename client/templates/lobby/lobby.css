@@ -113,7 +113,11 @@
 
 /* Dialog styling */
 
-#joinDialog, #createDialog, .join-dialog, .create-dialog {
+#joinDialog,
+#createDialog,
+.join-dialog,
+.create-dialog {
+  min-width: 320px;
   max-width: 420px;
 }
 
@@ -121,7 +125,10 @@ dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
 
-#joinDialog, #createDialog, .join-dialog, .create-dialog {
+#joinDialog,
+#createDialog,
+.join-dialog,
+.create-dialog {
   background: var(--panel);
   border: 1px solid var(--card-border);
   border-radius: 8px;
@@ -143,6 +150,40 @@ dialog::backdrop {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 12px;
+}
+
+#cardPacks {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 6px;
+  anchor-name: --card-packs-popover;
+  left: anchor(start);
+  top: anchor(end);
+  min-width: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#selectedCardPacksBtn {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 6px;
+  width: 100%;
+  anchor-name: --card-packs-popover;
+  text-align: left;
+}
+
+.two-column {
+  display: flex;
+  justify-content: space-between;
+  .half-width {
+    display: inline-block;
+    width: 48%;
+  }
 }
 
 .lobby-footer {

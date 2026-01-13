@@ -11,7 +11,7 @@ class Game extends EventEmitter {
   currentBlackCard;
   gameState;
 
-  constructor(room) {
+  constructor(room, maxScore = 10, selectedCardPacks = []) {
     super();
     this.room = room;
     this.gameState = GameState.WAITING_FOR_PLAYERS;
@@ -22,7 +22,8 @@ class Game extends EventEmitter {
     this.handSize = 10;
 
     // score required to win the game
-    this.winningScore = process.env.DEBUG === 'true' ? 2 : 10; // reduced for faster games
+    this.winningScore = process.env.DEBUG === 'true' ? 2 : maxScore; // reduced for faster games
+    this.selectedCardPacks = selectedCardPacks;
 
     // submissions map: submissionId -> { id, playerId, card }
     this.submissions = new Map();
@@ -84,11 +85,23 @@ class Game extends EventEmitter {
     // Build black and white decks from the imported JSON using the Base Set pack
     const all = typeof decks === 'object' && decks.default ? decks.default : decks;
 
-    // if the JSON is an array of packs, try to pick the base set
     let basePack = null;
     if (Array.isArray(all)) {
-      basePack = all.find(p => p && (p.name === 'CAH Base Set' || p.name === 'Base Set' || p.name && p.name.toLowerCase().includes('base set')));
-      if (!basePack) basePack = all[0]; // fallback to first pack
+      console.debug('[game] initializing decks with selected card packs', this.selectedCardPacks);
+      if (this.selectedCardPacks && this.selectedCardPacks.length > 0) {
+        // selectedPacks is a list of pack indexes
+        const selectedPacks = this.selectedCardPacks.map(idx => {
+          const i = parseInt(idx, 10);
+          return (i >= 0 && i < all.length) ? all[i] : null;
+        }).filter(Boolean);
+        basePack = {
+          white: selectedPacks.flatMap(p => p.white || []),
+          black: selectedPacks.flatMap(p => p.black || []),
+        };
+      } else {
+        basePack = all.find(p => p && (p.name === 'CAH Base Set' || p.name === 'Base Set' || p.name && p.name.toLowerCase().includes('base set')));
+        if (!basePack) basePack = all[0]; // fallback to first pack
+      }
     }
 
     const whiteSrc = (basePack && Array.isArray(basePack.white) && basePack.white.length) ? basePack.white : [];

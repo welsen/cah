@@ -1,0 +1,42 @@
+.socket-status {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  z-index: 9999;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+
+  &.connecting {
+    background: rgba(0, 0, 0, 0.6);
+    color: rgb(255, 255, 255);
+  }
+  &.connected {
+    background: rgba(46, 204, 113, 0.9);
+    color: rgb(255, 255, 255);
+  }
+  &.disconnected {
+    background: rgba(192, 57, 43, 0.9);
+    color: rgb(255, 255, 255);
+  }
+  &.connect_error {
+    background: rgba(241, 196, 15, 0.9);
+    color: rgb(0, 0, 0);
+  }
+  &.reconnecting {
+    background: rgba(52, 152, 219, 0.9);
+    color: rgb(255, 255, 255);
+  }
+
+  @media (width <= 480px) {
+    right: 6px;
+    top: 6px;
+    padding: 4px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    .status-text {
+      display: none;
+    }
+  }
+}

@@ -1,6 +1,9 @@
 import hb from 'https://cdn.jsdelivr.net/npm/handlebars@4.7.8/+esm';
 import socketIoClient from 'https://cdn.jsdelivr.net/npm/socket.io-client@4.8.3/+esm';
 import Router from './utils/router.mjs';
+import { createConnectionBadge, initBadgeListeners } from './templates/connection-badge/connection-badge.mjs';
+import { render, update } from './utils/render.mjs';
+import cardPacks from '/api/cardPacks' with { type: 'json' };
 
 class App {
   static instance = null;
@@ -18,56 +21,21 @@ class App {
     this.appWrapper = document.querySelector('app');
     this.router = new Router({ type: 'history', routes }).listen().on('route', this.onRouteChange.bind(this));
     this.socket = socketIoClient();
+    this.socketId = this.socket.id;
 
     // Debug helpers: expose socket and provide connection lifecycle logs
     window.appSocket = this.socket;
 
     // add a small connection badge to the page for quick visibility
-    (function createConnectionBadge() {
-      try {
-        const badge = document.createElement('div');
-        badge.id = 'socket-status';
-        badge.style.position = 'fixed';
-        badge.style.right = '12px';
-        badge.style.top = '12px';
-        badge.style.zIndex = '9999';
-        badge.style.padding = '6px 10px';
-        badge.style.borderRadius = '8px';
-        badge.style.background = 'rgba(0,0,0,0.6)';
-        badge.style.color = '#fff';
-        badge.style.fontSize = '12px';
-        badge.style.fontWeight = '700';
-        badge.textContent = 'Socket: connecting...';
-        document.body.appendChild(badge);
-      } catch (e) {
-        /* ignore when not in DOM context */
-      }
-    })();
+    createConnectionBadge()
+      .then(() => {
+        console.info('[socket] connection badge created');
+        initBadgeListeners();
+      })
+      .catch((e) => {
+        console.error('Failed to create connection badge', e);
+      });
 
-    const updateBadge = (txt, color) => {
-      const b = document.getElementById('socket-status');
-      if (!b) return;
-      b.textContent = 'Socket: ' + txt;
-      b.style.background = color;
-    };
-
-    this.socket.on('connect', () => {
-      this.socketId = this.socket.id;
-      console.info('[socket] connected', { id: this.socketId });
-      updateBadge('connected', 'rgba(46,204,113,0.9)');
-    });
-    this.socket.on('disconnect', (reason) => {
-      console.warn('[socket] disconnected', reason);
-      updateBadge('disconnected', 'rgba(192,57,43,0.9)');
-    });
-    this.socket.on('connect_error', (err) => {
-      console.error('[socket] connect_error', err);
-      updateBadge('error', 'rgba(241,196,15,0.95)');
-    });
-    this.socket.on('reconnect_attempt', (n) => {
-      console.info('[socket] reconnect attempt', n);
-      updateBadge('reconnecting...', 'rgba(52,152,219,0.9)');
-    });
     this.socket.on('message', (m) => {
       console.debug('[socket] message', m);
     });
@@ -76,32 +44,32 @@ class App {
     });
 
     // Lobby updates: auto-populate rooms list when socket receives lobbyRooms
-    this.socket.on('lobbyRooms', (rooms) => {
+    this.socket.on('lobbyRooms', async (rooms) => {
       console.debug('[socket] lobbyRooms', rooms);
       try {
         // only render if we are on the main lobby (no room id in path)
         const roomId = window.location.pathname.split('/')[1];
         if (roomId) return;
-
+        
         // fetch the lobby template and re-render with the new rooms
-        (async () => {
-          const html = await (await fetch('./templates/lobby/index.html')).text();
-          const template = hb.compile(html);
-          const out = template({ rooms });
-          this.appWrapper.innerHTML = out;
-          // initialize lobby module if available
-          try {
-            const lobbyModule = await import('./templates/lobby/lobby.mjs');
-            if (lobbyModule && typeof lobbyModule.initLobby === 'function') {
-              lobbyModule.initLobby();
-            }
-          } catch (e) {
-            console.error('Failed to initialize lobby module after lobbyRooms', e);
+        if (!this.lobbyRendered) {
+          await render(this.appWrapper, './templates/lobby/index.html', { rooms, cardPacks });
+        } else {
+          await update(this.appWrapper, './templates/lobby/index.html', { rooms, cardPacks });
+        }
+        // initialize lobby module if available
+        try {
+          const lobbyModule = await import('./templates/lobby/lobby.mjs');
+          if (lobbyModule && typeof lobbyModule.initLobby === 'function') {
+            lobbyModule.initLobby(this);
           }
-        })();
+        } catch (e) {
+          console.error('Failed to initialize lobby module after lobbyRooms', e);
+        }
       } catch (e) {
         console.error('Error handling lobbyRooms', e);
       }
+      this.lobbyRendered = true;
     });
   }
 
@@ -163,6 +131,10 @@ class App {
     const username = form.username.value;
     const roomName = form.roomName.value;
     const maxPlayers = form.maxPlayers.value;
+    const maxScore = form.maxScore.value;
+    const selectedCardPacks = Array.from(form.cardPacks)
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.value);
     // Add your create room logic here
     fetch('/api/rooms', {
       method: 'POST',
@@ -174,6 +146,8 @@ class App {
         maxPlayers: parseInt(maxPlayers, 10),
         password: form.password?.value || null,
         creatorName: username,
+        maxScore: parseInt(maxScore, 10),
+        cardPacks: selectedCardPacks,
       }),
     })
       .then((response) => response.json())
@@ -215,16 +189,12 @@ class App {
             }
           })
           .then(async (data) => {
-            const lobbyTemplate = await (await fetch('./templates/lobby/index.html')).text();
-            const template = hb.compile(lobbyTemplate);
-            const out = template({ rooms: data.rooms });
-            this.appWrapper.innerHTML = out;
-
+            await render(this.appWrapper,'./templates/lobby/index.html',{ rooms: data.rooms, cardPacks });
             // initialize lobby module if available
             try {
               const lobbyModule = await import('./templates/lobby/lobby.mjs');
               if (lobbyModule && typeof lobbyModule.initLobby === 'function') {
-                lobbyModule.initLobby();
+                lobbyModule.initLobby(this);
               }
             } catch (e) {
               console.error('Failed to initialize lobby module', e);
@@ -247,16 +217,13 @@ class App {
           }
         })
         .then(async (room) => {
-          const roomTemplate = await (await fetch('./templates/room/index.html')).text();
-          const template = hb.compile(roomTemplate);
-          const out = template(room);
-          this.appWrapper.innerHTML = out;
+          await render(this.appWrapper, './templates/room/index.html', room);
 
           // initialize room UI module (if present) after rendering
           try {
             const roomModule = await import('./templates/room/room.mjs');
             if (roomModule && typeof roomModule.initRoom === 'function') {
-              roomModule.initRoom();
+              roomModule.initRoom(this);
             }
           } catch (e) {
             console.error('Failed to initialize room module', e);

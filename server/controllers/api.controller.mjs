@@ -2,6 +2,7 @@ import express from 'express';
 import App from '../app.mjs';
 import Room from '../utils/room.mjs';
 import Player from '../utils/player.mjs';
+import cardPacks from '../../cah-cards-full.json' with { type: 'json' };
 
 const app = App.getInstance();
 
@@ -43,7 +44,7 @@ ApiController.get('/rooms/:id', (req, res) => {
 });
 
 ApiController.post('/rooms', (req, res) => {
-  const { name, maxPlayers, password } = req.body;
+  const { name, maxPlayers, maxScore, cardPacks, password } = req.body;
   try {
     // prevent duplicate room creation by name (case-insensitive)
     const roomName = (name || '').toString().trim().toLowerCase();
@@ -54,7 +55,7 @@ ApiController.post('/rooms', (req, res) => {
       }
     }
 
-    const room = new Room(name, maxPlayers, password);
+    const room = new Room(name, maxPlayers, maxScore, cardPacks, password);
     // attach creator name if provided
     if (req.body && req.body.creatorName) {
       room.creatorName = req.body.creatorName.toString().trim();
@@ -187,6 +188,10 @@ ApiController.post('/rooms/:id/join', (req, res) => {
     }
     res.status(400).json({ error: error.message });
   }
+});
+
+ApiController.get('/cardPacks', (req, res) => {
+  res.status(200).json(cardPacks);
 });
 
 export default ApiController;

@@ -1,6 +1,6 @@
-<link rel="stylesheet" href="./templates/lobby/lobby.css" />
+<link id="lobbyStylesheet" rel="stylesheet" href="./templates/lobby/lobby.css" />
 
-<section class="lobby">
+<section id="lobby" class="lobby">
   <header class="lobby-header">
     <div class="logo">Cards Against Humanity</div>
     <div class="actions">
@@ -56,8 +56,35 @@
       <input type="text" id="usernameCreatorInput" name="username" required />
       <label for="roomNameInput">Room name</label>
       <input type="text" id="roomNameInput" name="roomName" required />
-      <label for="maxPlayersInput">Max players</label>
-      <input type="number" id="maxPlayersInput" name="maxPlayers" required min="1" max="20" value="10" />
+      <div class="two-column">
+        <div class="half-width">
+          <label for="maxPlayersInput">Max players</label>
+          <input type="number" id="maxPlayersInput" name="maxPlayers" required min="1" max="20" value="10" />
+        </div>
+        <div class="half-width">
+          <label for="maxScoreInput">Max score</label>
+          <input type="number" id="maxScoreInput" name="maxScore" required min="1" max="100" value="10" />
+        </div>
+      </div>
+      <div>
+        <label for="cardPacks">Card Packs</label>
+        <div id="cardPacks" popover="auto">
+          <ul>
+            {{#each cardPacks}}
+            <li>
+              <label>
+                {{#if @first}}
+                <input type="checkbox" name="cardPacks" value="{{@index}}" checked disabled />
+                {{else}}
+                <input type="checkbox" name="cardPacks" value="{{@index}}" />
+                {{/if}} {{name}}
+              </label>
+            </li>
+            {{/each}}
+          </ul>
+        </div>
+        <button id="selectedCardPacksBtn" type="button" popovertarget="cardPacks">[Select Packs]</button>
+      </div>
       <label for="passwordInput">Password (optional)</label>
       <input type="password" id="passwordInput" name="password" autocomplete="room-pass" />
       <menu class="dialog-actions">
