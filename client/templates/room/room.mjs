@@ -523,7 +523,7 @@ export function initRoom(app) {
           if (String(player.id) === String(judgeId)) {
             li.classList.add('player-judge');
             const roleNode = li.querySelector('.player-role');
-            if (roleNode) roleNode.textContent = 'Judge';
+            if (roleNode) roleNode.textContent = 'Card Czar';
           }
 
           // populate initials into indicator (compact on mobile)
@@ -1101,7 +1101,7 @@ export function initRoom(app) {
         const isJudge = pid === strJudge;
         el.classList.toggle('player-judge', isJudge);
         const roleNode = el.querySelector('.player-role');
-        if (roleNode) roleNode.textContent = isJudge ? 'Judge' : '';
+        if (roleNode) roleNode.textContent = isJudge ? 'Card Czar' : '';
       });
       // re-render hand buttons to disable/enable playing depending on judge
       enableLocalReadyButton();
