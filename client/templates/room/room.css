@@ -482,7 +482,7 @@
   scroll-snap-align: center;
   position: relative;
 
-  &.playable {
+  &.playable, &.selectable {
     cursor: pointer;
     transition: transform 0.12s ease;
 
