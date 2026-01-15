@@ -2,21 +2,24 @@
   "name": "cah",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node server/index.mjs",
-    "test": "node --no-warnings --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand"
-  },
-  "devDependencies": {
-    "jest": "^29.6.1",
-    "socket.io-client": "4.8.3"
-  },
+  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.10.0",
+  "scripts": {
+    "build": "echo \"done.\"",
+    "start": "node src/index.ts",
+    "test": "node --no-warnings --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand"
+  },
   "dependencies": {
+    "@types/express": "^5.0.0",
     "express": "^5.2.1",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "jest": "^29.6.1",
+    "socket.io-client": "4.8.3"
   }
 }

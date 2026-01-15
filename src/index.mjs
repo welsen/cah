@@ -53,10 +53,12 @@ io.on('connection', (socket) => {
 });
 
 server.use(express.json());
-server.use('/', express.static('./client'));
-server.use('/:room', express.static('./client'));
+server.use('/', express.static('./public'));
+server.use('/:room', express.static('./public'));
 server.use('/api', ApiController);
 
 httpServer.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
+
+export default httpServer;
