@@ -725,7 +725,8 @@ export function initRoom(app) {
       if (!handNode) return;
       // clear any prior selections when a new hand arrives
       clearSelectionUI();
-      handNode.innerHTML = '';
+      handNode.innerHTML =
+        '<div class="hand-card card-spacer"></div><div class="hand-card card-spacer"></div>';
       const myId = sessionStorage.getItem('playerId');
       const judgeId = root.dataset.currentJudge || '';
       hand.forEach((card) => {
@@ -752,6 +753,8 @@ export function initRoom(app) {
         }
         handNode.appendChild(cardDiv);
       });
+      handNode.innerHTML +=
+        '<div class="hand-card card-spacer"></div><div class="hand-card card-spacer"></div>'; // trigger reflow
 
       // debug: if hand arrived but contains placeholders, show full card array
       if (!hand || !hand.length) {
@@ -1157,10 +1160,12 @@ export function initRoom(app) {
       if (root) {
         const handCol = root.querySelector('.hand-column');
         if (handCol && !handCol.querySelector('.hand-status')) {
-          const s = document.createElement('div');
-          s.className = 'hand-status small muted';
-          s.textContent = 'Waiting for hand...';
-          handCol.insertBefore(s, handCol.querySelector('.player-hand'));
+          const status = document.createElement('div');
+          status.className = 'hand-status small muted';
+          status.textContent = 'Waiting for hand...';
+          try {
+            handCol.insertBefore(status, handCol.querySelector('.player-hand'));
+          } catch (e) {}
         }
       }
     }

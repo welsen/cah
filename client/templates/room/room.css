@@ -233,8 +233,10 @@
 
 .card-placeholder {
   /* Cards sized to 2.5" x 3.5" (physical size) */
-  width: 2.5in;
-  height: 3.5in;
+  min-width: 2.5in;
+  min-height: 3.5in;
+  max-width: 2.5in;
+  max-height: 3.5in;
   box-sizing: border-box;
   border-radius: 12px;
   display: flex;
@@ -296,32 +298,35 @@
   border: 1px solid rgba(255, 255, 255, 0.04);
   position: relative;
   margin: 0 auto;
-}
-
-.card-placeholder.black .card-face,
-.card-black .card-face {
-  width: 100%;
-  height: 100%;
   display: flex;
-  align-items: start;
-  justify-content: start;
-  padding: 8px;
-  flex-direction: column;
-}
+  align-items: flex-start;
+  justify-content: flex-start;
 
-.card-placeholder.black .card-text,
-.card-black .card-text {
-  font-size: 0.75rem;
-  font-weight: 800;
-}
+  & .card-face,
+  & .card-face {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: start;
+    justify-content: start;
+    padding: 8px;
+    flex-direction: column;
+  }
 
-.card-placeholder.black .card-meta,
-.card-black .card-meta {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.78);
+  & .card-text,
+  & .card-text {
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  & .card-meta,
+  & .card-meta {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.78);
+  }
 }
 
 /* give subtle depth */
@@ -444,11 +449,12 @@
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent);
   border-top: 1px solid rgba(255, 255, 255, 0.03);
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.45);
+  height: calc(3.5in + 64px);
 }
 
 .player-hand-wrapper {
-  /* overflow: hidden; */
-  /* height: calc(3.5in + 16px); */
+  overflow: hidden;
+  height: calc(3.5in + 16px);
 }
 
 .player-hand {
@@ -457,15 +463,31 @@
   overflow-x: auto;
   padding: 8px 12px;
   align-items: center;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x;
+  scroll-behavior: smooth;
   anchor-name: --hand;
 
   &::scroll-button(left),
   &::scroll-button(right) {
-    content: '';
     position: absolute;
     background: transparent;
-    border: 0;
+    border: 1px solid #0f0f0f;
+    aspect-ratio: 1 / 1;
+    width: 3rem;
+    z-index: 10;
+    content: '◄';
+    top: 50%;
+    border-radius: 1000px;
+    translate: 0 -50%;
+    cursor: pointer;
+    font-size: 1.5rem;
+  }
+  &::scroll-button(left) {
+    left: 1rem;
+  }
+  &::scroll-button(right) {
+    right: 1rem;
+    content: '►';
   }
 }
 
@@ -482,7 +504,8 @@
   scroll-snap-align: center;
   position: relative;
 
-  &.playable, &.selectable {
+  &.playable,
+  &.selectable {
     cursor: pointer;
     transition: transform 0.12s ease;
 
@@ -494,6 +517,13 @@
   &.submitted {
     opacity: 0.4;
     cursor: default;
+  }
+
+  &.card-spacer {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    pointer-events: none;
   }
 }
 
@@ -742,6 +772,7 @@
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.3));
     border-top: 1px solid rgba(255, 255, 255, 0.04);
     box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.65);
+    height: calc(calc(min(120px, 32vw) * (3.5 / 2.5)) + 54px);
   }
 
   .player-hand {
