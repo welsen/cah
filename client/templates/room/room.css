@@ -233,10 +233,8 @@
 
 .card-placeholder {
   /* Cards sized to 2.5" x 3.5" (physical size) */
-  min-width: 2.5in;
-  min-height: 3.5in;
-  max-width: 2.5in;
-  max-height: 3.5in;
+  width: 2.5in;
+  height: 3.5in;
   box-sizing: border-box;
   border-radius: 12px;
   display: flex;
@@ -880,6 +878,10 @@
   .card-placeholder {
     width: min(1.9in, 36vw);
     height: calc(min(1.9in, 36vw) * (3.5 / 2.5));
+    &.black {
+      height: calc(max(2.5in, 36vw) * 3.5 / 2.5);
+      width: max(2.5in, 32vw);
+    }
   }
 
   /* hide selection line on very small screens to save space */
